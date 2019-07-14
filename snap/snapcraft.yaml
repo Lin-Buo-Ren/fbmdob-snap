@@ -121,6 +121,7 @@ parts:
     plugin: nil
     build-packages:
     - apt-transport-https
+    - curl
     override-stage: |
       set -o nounset
 
