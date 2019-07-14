@@ -11,3 +11,5 @@ __pycache__
 
 /*.snap
 /*_source.tar.bz2
+
+/test-cases/out*.*
