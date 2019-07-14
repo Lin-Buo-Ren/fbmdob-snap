@@ -69,7 +69,7 @@ assumes:
 
 # Base runtime
 # The common runtime for the snap to run on, or `bare` for static linked applications
-base: core18
+base: core
 # https://docs.snapcraft.io/snapcraft-top-level-metadata/8334#heading--base
 
 # Security confinement
@@ -117,6 +117,19 @@ parts:
     #prime:
     #- -*
 
+  crystal:
+    plugin: nil
+    build-packages:
+    - apt-transport-https
+    override-stage: |
+      set -o nounset
+
+      curl -sSL https://dist.crystal-lang.org/apt/setup.sh \
+        | sudo bash
+      sudo apt install \
+        --assume-yes \
+        crystal
+
   # Check out the tagged release revision if it isn't promoted to the stable channel
   # https://forum.snapcraft.io/t/selective-checkout-check-out-the-tagged-release-revision-if-it-isnt-promoted-to-the-stable-channel/10617
   selective-checkout:
@@ -130,6 +143,7 @@ parts:
 
   fbmdob:
     after:
+    - crystal
     - selective-checkout
 
     source: https://github.com/watzon/fbmdob.git
@@ -143,7 +157,24 @@ parts:
         --append-packaging-revision
 
     plugin: nil
+    override-build: |
+      set -o nounset
 
+      shards build
+      install \
+        -D \
+        --target-directory "${SNAPCRAFT_PART_INSTALL}"/bin \
+        bin/*
+
+  fbmdob-runtime-deps:
+    plugin: nil
+    stage-packages:
+    - libevent-2.0-5
+    - libevent-pthreads-2.0-5
+    stage:
+    - lib/**/*.so*
+    - usr/lib/**/*.so*
+    - usr/share/doc/**/copyright
 
 # Apps that are exposed by the snap package
 # If the _app_name_ is identical with the _snap_name_ it can be directly run
@@ -163,9 +194,7 @@ apps:
     command-chain:
     - bin/fbmdob-launch
 
-    # If the providing part of the app. has a desktop entry, specify its path relative to the `prime` directory.
-    # If the packaging target doesn't provide a desktop entry, ignore the `desktop` key and implement a desktop entry in `/snap/gui`
-    #desktop: share/applications/fbmdob.desktop
+    daemon: simple
 
 # Refer the following documentation for asserting interface plugs and slots in a security confined snap:
 # Interface management - doc - snapcraft.io
